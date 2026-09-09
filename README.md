@@ -170,14 +170,6 @@ the no-preemption case.
 Only strategy 2 required new code; strategies 0 and 1 are selected by
 configuring the base class.
 
-The gap between 1 and 2 only exists while the rotation is fixed. With
-`FixedChannelOrder = false` the base class reshuffles it at every advertising
-event, so stateless preemption resumes on an arbitrary channel instead of
-restarting from 37 — which is precisely the failure the stateful mechanism
-corrects — and the two strategies converge to within the confidence intervals.
-That configuration is worth running as a control, but it is not the one the
-paper describes.
-
 ## Notes on the setup
 
 The toolbox exposes a single `RandomAdvertising` flag that governs both the
