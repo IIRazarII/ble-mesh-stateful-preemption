@@ -174,8 +174,8 @@ configuring the base class.
 
 The toolbox exposes a single `RandomAdvertising` flag that governs both the
 `T_ChPDU` randomisation and the reshuffling of the channel rotation, so the
-combination the paper uses — random `T_ChPDU`, standard scanning order, with
-random channel selection listed as future work — is not reachable through that
+combination the paper uses (random `T_ChPDU`, standard scanning order, with
+random channel selection listed as future work) is not reachable through that
 flag alone. `FixedChannelOrder` supplies it and defaults to `true` in both
 runners, so their shipped defaults match the reference measurement protocol.
 The `ConfigurableGAPBearer` and `CustomMeshNode` classes keep it at `false`
