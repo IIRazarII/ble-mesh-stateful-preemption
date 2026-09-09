@@ -31,6 +31,11 @@ classdef ConfigurableGAPBearer < ble.internal.linkLayerGAPBearer
         
         % Toggle for Advertising Event logs (T_ChPDU gaps and timing)
         EnableAdvEventLog (1,1) logical = false
+        
+        % Keep the standard 37-38-39 channel rotation while still drawing
+        % T_ChPDU at random. Has no effect when RandomAdvertising is false,
+        % since the base class already uses that rotation. Default: false.
+        FixedChannelOrder (1,1) logical = false
     end
 
     properties (Access = protected)
@@ -57,6 +62,18 @@ classdef ConfigurableGAPBearer < ble.internal.linkLayerGAPBearer
             % Set the native PreemptiveScanning variable based on the chosen strategy
             % (Evaluated only once during node initialization)
             obj.PreemptiveScanning = (obj.RelayStrategy > 0);
+            
+            % Pin the channel rotation to the standard 37-38-39 sequence.
+            % The base class picks a row of pRandomAdvertisingChannelList at
+            % every advertising event (and once more in init), so collapsing
+            % all six permutations onto the same row makes that draw a no-op
+            % while leaving getRandomAdvertisingInstances untouched. This must
+            % run after the superclass constructor, which is what assigns the
+            % name-value pairs and therefore FixedChannelOrder itself.
+            if obj.FixedChannelOrder
+                obj.pRandomAdvertisingChannelList = repmat([37 38 39], 6, 1);
+                obj.pAdvertisingChannelList = [37; 38; 39];
+            end
         end
     end
 

@@ -5,9 +5,11 @@ classdef CustomMeshNode < bluetoothLENode
 % dynamic T_ChPDU intervals.
 %
 % Supported Name-Value pairs:
-%   RelayStrategy   - 0 (Without), 1 (Stateless), 2 (Stateful). Default: 0
-%   RandomAdvMinGap - Minimum gap for T_ChPDU in ms. Default: 1
-%   RandomAdvMaxGap - Maximum gap for T_ChPDU in ms. Default: 10
+%   RelayStrategy     - 0 (Without), 1 (Stateless), 2 (Stateful). Default: 0
+%   RandomAdvMinGap   - Minimum gap for T_ChPDU in ms. Default: 1
+%   RandomAdvMaxGap   - Maximum gap for T_ChPDU in ms. Default: 10
+%   FixedChannelOrder - Keep the 37-38-39 rotation while still randomising
+%                       T_ChPDU. Default: false
 %
 % Note: This script has only been verified to work with MATLAB R2025b.
 
@@ -17,6 +19,7 @@ classdef CustomMeshNode < bluetoothLENode
         RandomAdvMaxGap (1,1) double {mustBeNonnegative} = 10
         EnablePreemptionLog (1,1) logical = false
         EnableAdvEventLog   (1,1) logical = false
+        FixedChannelOrder   (1,1) logical = false
     end
 
     methods
@@ -45,7 +48,8 @@ classdef CustomMeshNode < bluetoothLENode
                         'RandomAdvMinGap', currentNode.RandomAdvMinGap, ...
                         'RandomAdvMaxGap', currentNode.RandomAdvMaxGap, ...
                         'EnablePreemptionLog', currentNode.EnablePreemptionLog, ...
-                        'EnableAdvEventLog', currentNode.EnableAdvEventLog);
+                        'EnableAdvEventLog', currentNode.EnableAdvEventLog, ...
+                        'FixedChannelOrder', currentNode.FixedChannelOrder);
                     
                     % Overwrite the protected property of the superclass
                     currentNode.pLinkLayer = customBearer;

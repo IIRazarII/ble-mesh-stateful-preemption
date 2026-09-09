@@ -57,7 +57,17 @@ function [results, nodes] = runPreemptionSimulation(opts)
 %
 % --- RADIO AND LINK LAYER ------------------------------------------------
 %   AdvertisingInterval     Advertising interval, in seconds
-%   RandomAdvertising       Randomise the advertising channel rotation
+%   RandomAdvertising       Randomise the advertising channel rotation and
+%                           the T_ChPDU gaps
+%   FixedChannelOrder       Keep the standard 37-38-39 rotation while still
+%                           randomising T_ChPDU. Defaults to true because the
+%                           reference work combines random T_ChPDU with the
+%                           standard scanning order, a pairing the native
+%                           RandomAdvertising flag cannot express on its own.
+%                           Set it to false to let the Link Layer reshuffle
+%                           the rotation at every advertising event, which
+%                           makes Stateless Preemption resume on an arbitrary
+%                           channel
 %   AdvMinGap / AdvMaxGap   T_ChPDU bounds, in milliseconds
 %   ReceiverRange           Coverage range, in meters
 %   TransmitterPower        Transmit power, in dBm
@@ -79,22 +89,33 @@ function [results, nodes] = runPreemptionSimulation(opts)
 %   nodes    The array of CustomMeshNode objects, for further inspection
 %
 % --- EXAMPLES ------------------------------------------------------------
-%   % Reference setup (Experiment D, Stateful, 10 ms)
+%   % Reference protocol
 %   results = runPreemptionSimulation();
 %
 %   % Reduced run
 %   results = runPreemptionSimulation( ...
-%       RelayStrategy = 2, ScanInterval = 100e-3, PacketsPerSource = 5);
+%       RelayStrategy = 2, ScanInterval = 100e-3, ...
+%       PacketsPerSource = 100, ...
+%       NetworkTransmissions = 1);
 %
 %   % Reduced run with logs, to verify the mechanism
 %   results = runPreemptionSimulation( ...
 %       RelayStrategy = 2, ScanInterval = 100e-3, PacketsPerSource = 5, ...
 %       EnablePreemptionLog = true, EnableAdvEventLog = true);
 %
-%   % Single burst: 100 messages in 10 ms, then 10 s to drain the network
+%   % Four source-destination pairs
 %   results = runPreemptionSimulation( ...
-%       PacketsPerSource = 100, BurstSize = 100, TrafficOnTime = 10e-3, ...
-%       PacketRate = 0.05, SimTime = 10);
+%       RelayStrategy = 2, ScanInterval = 100e-3, ...
+%       PacketsPerSource = 50, ...
+%       SourcePositions = [0 20; 32  4; 20 24; 12  0], ...
+%       DestPositions   = [0  4; 32 20; 20  0; 12 24]);
+%
+%   % Same run with the rotation reshuffled at every advertising event
+%   results = runPreemptionSimulation( ...
+%       RelayStrategy = 2, ScanInterval = 100e-3, ...
+%       FixedChannelOrder = false, PacketsPerSource = 50, ...
+%       SourcePositions = [0 20; 32  4; 20 24; 12  0], ...
+%       DestPositions   = [0  4; 32 20; 20  0; 12 24]);
 
 arguments
     % --- RUN -------------------------------------------------------------
@@ -126,6 +147,7 @@ arguments
     % --- RADIO AND LINK LAYER --------------------------------------------
     opts.AdvertisingInterval     (1,1) double  {mustBePositive} = 20e-3
     opts.RandomAdvertising       (1,1) logical = true
+    opts.FixedChannelOrder       (1,1) logical = true
     opts.AdvMinGap               (1,1) double  {mustBePositive} = 1
     opts.AdvMaxGap               (1,1) double  {mustBePositive} = 10
     opts.ReceiverRange           (1,1) double  {mustBePositive} = 9
@@ -226,6 +248,13 @@ if opts.AdvertisingInterval <= opts.AdvMaxGap * 1e-3
         opts.AdvMaxGap, opts.AdvertisingInterval * 1000);
 end
 
+% Rotation actually in use, reported in the header
+if opts.RandomAdvertising && ~opts.FixedChannelOrder
+    channelOrder = "randomised";
+else
+    channelOrder = "fixed 37-38-39";
+end
+
 % Set the seed to ensure stable and reproducible results
 rng(opts.Seed, char(opts.RandomStream));
 
@@ -255,6 +284,7 @@ if opts.Verbose
     end
     fprintf(' Link Layer     : ADV %g ms, T_ChPDU [%g, %g] ms, Random %d\n', ...
         opts.AdvertisingInterval*1000, opts.AdvMinGap, opts.AdvMaxGap, opts.RandomAdvertising);
+    fprintf(' Channel Order  : %s\n', channelOrder);
     fprintf(' Duration       : %.2f s (%.2f s drain window), seed %d\n', ...
         simTime, simTime - (floor(simTime/period)*period + opts.TrafficOnTime), opts.Seed);
     fprintf('======================================================\n\n');
@@ -312,6 +342,7 @@ for i = 1:numTotalNodes
         AdvertisingInterval = opts.AdvertisingInterval, ...
         ScanInterval = opts.ScanInterval, ...
         RandomAdvertising = opts.RandomAdvertising, ...
+        FixedChannelOrder = opts.FixedChannelOrder, ...
         RelayStrategy = opts.RelayStrategy, ...
         RandomAdvMinGap = opts.AdvMinGap, ...
         RandomAdvMaxGap = opts.AdvMaxGap, ...
